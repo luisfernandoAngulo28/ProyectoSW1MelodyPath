@@ -2,6 +2,7 @@ from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.utils import timezone
+from django.db import models
 from .models import Exercise, ExerciseAttempt
 from .serializers import ExerciseSerializer, ExerciseSubmitSerializer, ExerciseAttemptSerializer
 
@@ -14,8 +15,12 @@ class ExerciseListView(generics.ListAPIView):
     def get_queryset(self):
         qs = Exercise.objects.filter(is_active=True)
         user = self.request.user
+        # Filter by instrument if user has one selected,
+        # but also include exercises with no instrument assigned (general exercises).
         if user.instrument_id:
-            qs = qs.filter(instrument=user.instrument)
+            qs = qs.filter(
+                models.Q(instrument=user.instrument) | models.Q(instrument__isnull=True)
+            )
         return qs
 
 

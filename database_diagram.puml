@@ -1,0 +1,368 @@
+@startuml Diagrama_Clases_MelodyPath
+
+title Diagrama de Clases - MelodyPath
+
+' ============================================================
+'  Estilos generales (misma estetica que la imagen de referencia)
+' ============================================================
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 9
+skinparam shadowing false
+skinparam linetype ortho
+skinparam ranksep 60
+skinparam nodesep 40
+
+skinparam class {
+  HeaderBackgroundColor  #F4C58A
+  BackgroundColor        #FFF9F0
+  BorderColor            #C8963C
+  BorderThickness        1.5
+  FontColor              #2D1A00
+  FontSize               9
+  AttributeFontColor     #3D2B00
+  AttributeFontSize      9
+  ArrowColor             #555555
+}
+
+skinparam arrow {
+  Color     #555555
+  FontColor #555555
+  FontSize  8
+  Thickness 1.2
+}
+
+' ============================================================
+'  USUARIOS
+' ============================================================
+class Usuario {
+  - id: int
+  - email: String
+  - name: String
+  - role: String
+  - avatar: ImageField
+  - level: int
+  - xp: int
+  - xp_next: int
+  - streak: int
+  - last_practice: Date
+  - is_premium: Boolean
+  - initial_level: String
+  - date_joined: DateTime
+  --
+  + add_xp(amount: int): int
+  + avatar_initial(): String
+}
+
+' ============================================================
+'  INSTRUMENTOS
+' ============================================================
+class Instrumento {
+  - id: int
+  - name: String
+  - slug: String
+  - emoji: String
+  - category: String
+  - description: Text
+  - is_active: Boolean
+  - order: int
+  --
+  + (): void
+}
+
+' ============================================================
+'  LECCIONES
+' ============================================================
+class Leccion {
+  - id: int
+  - title: String
+  - description: Text
+  - level: String
+  - lesson_type: String
+  - order: int
+  - content: Text
+  - video_url: String
+  - xp_reward: int
+  - duration_minutes: int
+  - is_premium: Boolean
+  - is_active: Boolean
+  - created_at: DateTime
+  --
+  + (): void
+}
+
+class ProgresoLeccion {
+  - id: int
+  - completed: Boolean
+  - score: Float
+  - completed_at: DateTime
+  - attempts: int
+  --
+  + (): void
+}
+
+' ============================================================
+'  EJERCICIOS
+' ============================================================
+class Ejercicio {
+  - id: int
+  - title: String
+  - exercise_type: String
+  - difficulty: String
+  - question: Text
+  - options: JSON
+  - correct_answer: String
+  - xp_reward: int
+  - is_active: Boolean
+  --
+  + (): void
+}
+
+class IntentoEjercicio {
+  - id: int
+  - user_answer: String
+  - is_correct: Boolean
+  - response_time_ms: int
+  - feedback: Text
+  - attempted_at: DateTime
+  --
+  + (): void
+}
+
+' ============================================================
+'  EVALUACION
+' ============================================================
+class PreguntaEvaluacion {
+  - id: int
+  - question: Text
+  - category: String
+  - options: JSON
+  - correct_answer: String
+  - level_indicator: String
+  - order: int
+  - is_active: Boolean
+  --
+  + (): void
+}
+
+class EvaluacionUsuario {
+  - id: int
+  - answers: JSON
+  - score: Float
+  - assigned_level: String
+  - completed_at: DateTime
+  --
+  + (): void
+}
+
+class EvaluacionModulo {
+  - id: int
+  - score: Float
+  - passed: Boolean
+  - answers: JSON
+  - feedback: Text
+  - completed_at: DateTime
+  --
+  + (): void
+}
+
+' ============================================================
+'  GAMIFICACION
+' ============================================================
+class Insignia {
+  - id: int
+  - slug: String
+  - name: String
+  - description: Text
+  - icon: String
+  - xp_required: int
+  - condition: String
+  - is_active: Boolean
+  --
+  + (): void
+}
+
+class InsigniaUsuario {
+  - id: int
+  - earned_at: DateTime
+  --
+  + (): void
+}
+
+class Reto {
+  - id: int
+  - title: String
+  - description: Text
+  - frequency: String
+  - xp_reward: int
+  - target_count: int
+  - action_type: String
+  - is_active: Boolean
+  - created_at: DateTime
+  --
+  + (): void
+}
+
+class RetoUsuario {
+  - id: int
+  - progress: int
+  - completed: Boolean
+  - completed_at: DateTime
+  - period_start: Date
+  --
+  + (): void
+}
+
+class Ranking {
+  - id: int
+  - week_start: Date
+  - xp_earned: int
+  - position: int
+  - lessons_completed: int
+  --
+  + (): void
+}
+
+' ============================================================
+'  PROGRESO
+' ============================================================
+class RegistroProgreso {
+  - id: int
+  - date: Date
+  - lessons_completed: int
+  - exercises_done: int
+  - xp_earned: int
+  - accuracy_avg: Float
+  - practice_minutes: int
+  --
+  + (): void
+}
+
+class RecordatorioEstudio {
+  - id: int
+  - time: Time
+  - days: JSON
+  - message: String
+  - is_active: Boolean
+  - created_at: DateTime
+  --
+  + (): void
+}
+
+' ============================================================
+'  ANALISIS IA
+' ============================================================
+class AnalisisIA {
+  - id: int
+  - analysis_type: String
+  - audio_file: FileField
+  - input_data: JSON
+  - accuracy_score: Float
+  - pitch_accuracy: Float
+  - rhythm_accuracy: Float
+  - detected_notes: JSON
+  - strengths: JSON
+  - weaknesses: JSON
+  - recommendations: JSON
+  - feedback_text: Text
+  - analyzed_at: DateTime
+  --
+  + (): void
+}
+
+class RecomendacionIA {
+  - id: int
+  - reason: Text
+  - priority: int
+  - is_seen: Boolean
+  - created_at: DateTime
+  --
+  + (): void
+}
+
+' ============================================================
+'  COMUNIDAD
+' ============================================================
+class Comunidad {
+  - id: int
+  - name: String
+  - description: Text
+  - icon: String
+  - external_url: String
+  - member_count: int
+  - is_active: Boolean
+  - created_at: DateTime
+  --
+  + (): void
+}
+
+class MiembroComunidad {
+  - id: int
+  - joined_at: DateTime
+  --
+  + (): void
+}
+
+class LogroCompartido {
+  - id: int
+  - message: Text
+  - likes: int
+  - created_at: DateTime
+  --
+  + (): void
+}
+
+' ============================================================
+'  RELACIONES
+' ============================================================
+
+' Usuario <-> Instrumento
+Usuario "0..*" -- "0..1" Instrumento : "instrumento principal >"
+
+' Usuario <-> Evaluacion
+Usuario "1" -- "0..1" EvaluacionUsuario       : "realiza >"
+Usuario "1" -- "0..*" EvaluacionModulo         : "responde >"
+EvaluacionModulo "0..*" -- "1" Leccion         : "evalua >"
+
+' Leccion <-> Instrumento
+Leccion "0..*" -- "1" Instrumento             : "pertenece a >"
+Leccion "0..*" -- "0..1" Usuario              : "creada por >"
+
+' ProgresoLeccion
+ProgresoLeccion "0..*" -- "1" Usuario         : "progreso de >"
+ProgresoLeccion "0..*" -- "1" Leccion         : "sobre leccion >"
+
+' Ejercicio
+Ejercicio "0..*" -- "0..1" Instrumento        : "de instrumento >"
+Ejercicio "0..*" -- "0..1" Leccion            : "de leccion >"
+IntentoEjercicio "0..*" -- "1" Usuario        : "intento de >"
+IntentoEjercicio "0..*" -- "1" Ejercicio      : "sobre ejercicio >"
+
+' Gamificacion
+InsigniaUsuario "0..*" -- "1" Usuario         : "ganada por >"
+InsigniaUsuario "0..*" -- "1" Insignia        : "es insignia >"
+RetoUsuario "0..*" -- "1" Usuario             : "de usuario >"
+RetoUsuario "0..*" -- "1" Reto                : "corresponde a >"
+Reto "0..*" -- "0..1" Insignia               : "recompensa >"
+Reto "0..*" -- "0..1" Instrumento            : "para instrumento >"
+Ranking "0..*" -- "1" Usuario                : "posicion semanal >"
+
+' Progreso
+RegistroProgreso "0..*" -- "1" Usuario        : "registro de >"
+RecordatorioEstudio "0..*" -- "1" Usuario     : "recordatorio de >"
+
+' IA
+AnalisisIA "0..*" -- "1" Usuario              : "analisis de >"
+AnalisisIA "0..*" -- "0..1" Ejercicio         : "sobre ejercicio >"
+RecomendacionIA "0..*" -- "1" Usuario         : "para usuario >"
+RecomendacionIA "0..*" -- "0..1" Leccion      : "sugiere leccion >"
+RecomendacionIA "0..*" -- "0..1" Ejercicio    : "sugiere ejercicio >"
+
+' Comunidad
+Comunidad "0..*" -- "0..1" Instrumento        : "enfocada en >"
+MiembroComunidad "0..*" -- "1" Usuario        : "es miembro >"
+MiembroComunidad "0..*" -- "1" Comunidad      : "de comunidad >"
+LogroCompartido "0..*" -- "1" Usuario         : "compartido por >"
+LogroCompartido "0..*" -- "0..1" Insignia     : "logro compartido >"
+
+@enduml
