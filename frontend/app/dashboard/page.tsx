@@ -561,12 +561,12 @@ export default function DashboardPage() {
         <h3 className="section-title mb-4">Todas las insignias disponibles</h3>
         <div className="grid-3">
           {[
-            {icon:<GiMusicalNotes size={20} color="#a78bfa"/>,name:"Primera Lección",desc:"Completa tu primera lección"},
-            {icon:<FiZap size={20} color="#f97316"/>,name:"Racha 3 días",desc:"Practica 3 días seguidos"},
-            {icon:<FiStar size={20} color="#f59e0b"/>,name:"Puntaje Perfecto",desc:"100% en evaluación"},
-            {icon:<FiAward size={20} color="#f59e0b"/>,name:"Campeón Semanal",desc:"Gana reto semanal"},
-            {icon:<FiBook size={20} color="#60a5fa"/>,name:"Maestro",desc:"Nivel 10"},
-            {icon:<FiCheckCircle size={20} color="#10b981"/>,name:"Centurión",desc:"100 ejercicios"},
+            {icon:"🎵",name:"Primera Lección",desc:"Completa tu primera lección"},
+            {icon:"⚡",name:"Racha 3 días",desc:"Practica 3 días seguidos"},
+            {icon:"⭐",name:"Puntaje Perfecto",desc:"100% en evaluación"},
+            {icon:"🏆",name:"Campeón Semanal",desc:"Gana reto semanal"},
+            {icon:"📚",name:"Maestro",desc:"Nivel 10"},
+            {icon:"✅",name:"Centurión",desc:"100 ejercicios"},
           ].map((b,i)=>(
             <div key={i} className="achievement-card locked"><span className="achievement-icon">{b.icon}</span><div><div className="achievement-name">{b.name}</div><div className="achievement-desc">{b.desc}</div></div></div>
           ))}
@@ -584,7 +584,27 @@ export default function DashboardPage() {
           ? <p className="text-secondary">Cargando ranking...</p>
           : ranking.map((r:any)=>(
             <div key={r.user_id} className="rank-row" style={{background:r.is_current_user?"var(--accent-glow)":""}}>
-              <span className={`rank-num ${r.position<=3?"top":""}`}>{r.position<=3?[<FiAward key={0} size={18} color="#f59e0b"/>,<FiAward key={1} size={18} color="#9ca  // ── Lessons Section — HU-007 YouTube Integration ──────
+              <span className={`rank-num ${r.position<=3?"top":""}`}>
+                {r.position<=3
+                  ? <FiAward size={18} color={r.position===1?"#f59e0b":r.position===2?"#9ca3af":"#cd7f32"}/>
+                  : r.position}
+              </span>
+              <div className="avatar" style={{width:"32px",height:"32px",fontSize:"0.8rem"}}>{r.name?.[0]||"U"}</div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:600,fontSize:"0.875rem"}}>{r.name}</div>
+                <div className="text-xs text-muted">{r.instrument||"Sin instrumento"}</div>
+              </div>
+              <div className="text-gold text-sm font-bold" style={{display:"flex",alignItems:"center",gap:"4px"}}>
+                <FiStar size={12} color="#f59e0b"/>{r.xp} XP
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+
+  // ── Lessons Section — HU-007 YouTube Integration ──────
   const LessonsSection = () => {
     const [videoLoaded, setVideoLoaded] = React.useState(false);
 
@@ -763,28 +783,6 @@ export default function DashboardPage() {
                   </div>
                 );
               })}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-/>Avanzado</>}</h3>
-            <div className="grid-2">
-              {ls.map((l:any)=>(
-                <div key={l.id} className="card card-glow" style={{cursor:"pointer"}} onClick={()=>setActiveLesson(l)}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
-                    <span className="badge badge-muted">{l.lesson_type}</span>
-                    {l.completed&&<span className="badge badge-green">✓ Completada</span>}
-                  </div>
-                  <h4 style={{fontWeight:700,marginBottom:"6px"}}>{l.title}</h4>
-                  <p className="text-sm mb-4">{l.description}</p>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span className="text-xs text-muted" style={{display:"flex",alignItems:"center",gap:"4px"}}><FiSliders size={12}/> {l.duration_minutes} min</span>
-                    <span className="text-gold text-xs font-bold">+{l.xp_reward} XP</span>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         ))}
