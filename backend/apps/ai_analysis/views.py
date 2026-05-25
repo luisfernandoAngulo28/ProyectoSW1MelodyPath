@@ -149,6 +149,192 @@ class RecommendationsView(APIView):
         return Response(RecommendationSerializer(recs, many=True).data)
 
 
+class PersonalizedLessonsView(APIView):
+    """
+    HU-011 / HU-013: Lecciones personalizadas con Claude AI.
+    GET /api/ai/personalized-lessons/
+    Analiza el perfil del usuario y retorna lecciones recomendadas
+    con una explicación personalizada generada por Claude.
+    """
+
+    def get(self, request):
+        from django.conf import settings
+        from apps.lessons.models import Lesson, UserLesson
+        from apps.exercises.models import ExerciseAttempt
+        from apps.progress.models import ProgressRecord
+
+        user = request.user
+
+        if not settings.ANTHROPIC_API_KEY:
+            return Response(
+                {"detail": "ANTHROPIC_API_KEY no configurada en el servidor."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        # ── 1. Perfil del usuario ────────────────────────────
+        instrument_name = user.instrument.name if user.instrument else None
+        instrument_slug = user.instrument.slug if user.instrument else None
+
+        completed_ids = list(
+            UserLesson.objects.filter(user=user, completed=True)
+            .values_list("lesson_id", flat=True)
+        )
+
+        # ── 2. Precisión por tipo de ejercicio ───────────────
+        attempts = ExerciseAttempt.objects.filter(user=user)
+        accuracy_by_type = {}
+        for ex_type in ["note_recognition", "rhythm", "chord", "pitch", "ear_training"]:
+            type_attempts = attempts.filter(exercise__exercise_type=ex_type)
+            total = type_attempts.count()
+            if total > 0:
+                correct = type_attempts.filter(is_correct=True).count()
+                accuracy_by_type[ex_type] = round((correct / total) * 100, 1)
+
+        # ── 3. Lecciones candidatas (no completadas, activas) ─
+        lessons_qs = Lesson.objects.filter(is_active=True).exclude(id__in=completed_ids)
+        if instrument_slug:
+            lessons_qs = lessons_qs.filter(instrument__slug=instrument_slug)
+        if not user.is_premium:
+            lessons_qs = lessons_qs.filter(is_premium=False)
+
+        candidate_lessons = list(
+            lessons_qs.select_related("instrument").values(
+                "id", "title", "description", "level",
+                "lesson_type", "xp_reward", "duration_minutes",
+                "instrument__name",
+            )[:20]
+        )
+
+        if not candidate_lessons:
+            return Response({
+                "message": "No hay lecciones disponibles para tu perfil en este momento.",
+                "lessons": [],
+            })
+
+        # ── 4. Progreso reciente ─────────────────────────────
+        recent_progress = list(
+            ProgressRecord.objects.filter(user=user)
+            .order_by("-date")
+            .values("date", "lessons_completed", "exercises_done", "accuracy_avg", "xp_earned")[:7]
+        )
+        for rec in recent_progress:
+            rec["date"] = str(rec["date"])
+
+        # ── 5. Construir prompt para Claude ──────────────────
+        user_profile = {
+            "nombre": user.name,
+            "nivel_xp": user.level,
+            "xp_actual": user.xp,
+            "nivel_inicial": user.initial_level or "beginner",
+            "instrumento": instrument_name or "Sin instrumento",
+            "racha_dias": user.streak,
+            "lecciones_completadas": len(completed_ids),
+            "precision_por_tipo": accuracy_by_type,
+            "progreso_ultima_semana": recent_progress,
+        }
+
+        system_prompt = """Eres un tutor musical inteligente de MelodyPath, una plataforma de aprendizaje musical gamificada.
+Tu tarea es analizar el perfil de un estudiante y recomendar las mejores lecciones disponibles para él,
+con una explicación personalizada y motivadora para cada una.
+
+REGLAS:
+- Selecciona entre 3 y 5 lecciones de la lista de candidatas.
+- Prioriza lecciones que correspondan al nivel del estudiante y sus áreas débiles.
+- La explicación debe ser cálida, motivadora y en español.
+- Menciona específicamente por qué ESA lección le sirve a ESE estudiante.
+- Responde ÚNICAMENTE con JSON válido, sin texto adicional, con esta estructura exacta:
+{
+  "mensaje_general": "string — saludo personalizado y motivación general (2-3 oraciones)",
+  "lecciones": [
+    {
+      "id": <número entero>,
+      "explicacion": "string — por qué esta lección es ideal para el estudiante (1-2 oraciones)"
+    }
+  ]
+}"""
+
+        user_message = f"""Perfil del estudiante:
+{user_profile}
+
+Lecciones candidatas disponibles:
+{candidate_lessons}
+
+Recomienda las mejores lecciones para este estudiante."""
+
+        # ── 6. Llamar a Claude API ───────────────────────────
+        try:
+            import anthropic
+
+            client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+
+            ai_response = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=1024,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_message}],
+            )
+
+            import json
+            raw_text = ai_response.content[0].text.strip()
+            ai_data = json.loads(raw_text)
+
+        except json.JSONDecodeError:
+            return Response(
+                {"detail": "Error al procesar la respuesta de IA. Intenta de nuevo."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except Exception as e:
+            return Response(
+                {"detail": f"Error al conectar con la IA: {str(e)}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        # ── 7. Enriquecer con datos completos de la lección ──
+        recommended_ids = [item["id"] for item in ai_data.get("lecciones", [])]
+        explanations = {item["id"]: item["explicacion"] for item in ai_data.get("lecciones", [])}
+
+        lessons_map = {
+            l["id"]: l for l in candidate_lessons if l["id"] in recommended_ids
+        }
+
+        result_lessons = []
+        for lesson_id in recommended_ids:
+            if lesson_id not in lessons_map:
+                continue
+            lesson = lessons_map[lesson_id]
+            result_lessons.append({
+                "id": lesson["id"],
+                "title": lesson["title"],
+                "description": lesson["description"],
+                "level": lesson["level"],
+                "lesson_type": lesson["lesson_type"],
+                "xp_reward": lesson["xp_reward"],
+                "duration_minutes": lesson["duration_minutes"],
+                "instrument": lesson["instrument__name"],
+                "ai_explanation": explanations.get(lesson_id, ""),
+            })
+
+        # ── 8. Guardar recomendaciones en BD ─────────────────
+        lesson_objs = Lesson.objects.filter(id__in=recommended_ids)
+        lesson_obj_map = {l.id: l for l in lesson_objs}
+        for lesson_id in recommended_ids:
+            if lesson_id in lesson_obj_map:
+                UserRecommendation.objects.get_or_create(
+                    user=user,
+                    lesson=lesson_obj_map[lesson_id],
+                    defaults={
+                        "reason": explanations.get(lesson_id, "Recomendado por IA"),
+                        "priority": recommended_ids.index(lesson_id) + 1,
+                    },
+                )
+
+        return Response({
+            "mensaje_general": ai_data.get("mensaje_general", ""),
+            "lecciones": result_lessons,
+            "tokens_usados": ai_response.usage.input_tokens + ai_response.usage.output_tokens,
+        })
+
+
 def _get_ai_recs(accuracy: float) -> list:
     if accuracy >= 80:
         return ["Estás listo para el siguiente nivel", "Intenta ejercicios avanzados"]
