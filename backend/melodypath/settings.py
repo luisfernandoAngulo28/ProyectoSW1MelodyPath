@@ -144,6 +144,9 @@ CELERY_TASK_SERIALIZER = "json"
 # Email (development)
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
+# Claude API (Anthropic) — lecciones personalizadas con IA
+ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")
+
 # Swagger
 SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {"Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"}},
