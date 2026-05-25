@@ -122,6 +122,38 @@ Admin Django: `http://localhost:8000/django-admin/`
 
 ---
 
+### 🌱 Datos de prueba (Seeds)
+
+Ejecutar en orden dentro del directorio `backend/` con el entorno virtual activado:
+
+```powershell
+# 1. Instrumentos, insignias, retos y preguntas de evaluación
+python manage.py shell < seed_data.py
+
+# 2. Lecciones y ejercicios
+python manage.py shell < seed_lessons.py
+
+# 3. Usuarios de prueba
+python manage.py shell < seed_users.py
+```
+
+#### Usuarios disponibles
+
+| Rol | Nombre | Email | Contraseña | Instrumento | Nivel |
+|-----|--------|-------|-----------|-------------|-------|
+| 👑 Admin | Admin MelodyPath | `admin@melodypath.com` | `Admin123!` | — | 10 |
+| ⭐ Premium | Luis Fernando | `luis@melodypath.com` | `Test123!` | Piano | 7 |
+| ⭐ Premium | Fernando Dev | `fernando@melodypath.com` | `Test123!` | Guitarra | 5 |
+| ⭐ Premium | Sofía López | `sofia@melodypath.com` | `Test123!` | Piano | 6 |
+| 👤 Usuario | María García | `maria@melodypath.com` | `Test123!` | Canto | 3 |
+| 👤 Usuario | Ana Pérez | `ana@melodypath.com` | `Test123!` | Violín | 4 |
+| 👤 Usuario | Carlos Ruiz | `carlos@melodypath.com` | `Test123!` | Batería | 2 |
+| 👤 Usuario | Diego Torres | `diego@melodypath.com` | `Test123!` | Trompeta | 1 |
+
+> Los seeds usan `get_or_create`, por lo que son seguros de ejecutar varias veces sin duplicar datos.
+
+---
+
 ### 2. Frontend (Next.js)
 
 ```powershell
